@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: auralix_revenuehub_backend
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - PROJECT_NAME=Auralix RevenueHub
+      - VERSION=1.0.0
+      - API_V1_STR=/api/v1
+      - SECRET_KEY=${SECRET_KEY:-auralix_revenuehub_super_secret_jwt_key_2026_x89a}
+      - DATABASE_URL=${DATABASE_URL:-sqlite:///./auralix_revenuehub.db}
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
+    volumes:
+      - backend_db_data:/app/auralix_revenuehub.db
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8000/health\")' || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: auralix_revenuehub_frontend
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  backend_db_data:
